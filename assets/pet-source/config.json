@@ -1,0 +1,9 @@
+{
+  "frameHeight": 112,
+  "roles": {
+    "ciallo": ["ciallo"],
+    "idle": ["default", "dance"],
+    "eat": ["finish"],
+    "working": ["busy", "thinking", "working"]
+  }
+}

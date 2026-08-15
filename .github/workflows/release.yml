@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            dist: dist:win
+            artifact: fishcode-win-x64
+          - os: macos-13
+            dist: dist:mac:x64
+            artifact: fishcode-mac-x64
+          - os: macos-14
+            dist: dist:mac:arm64
+            artifact: fishcode-mac-arm64
+          - os: ubuntu-latest
+            dist: dist:linux
+            artifact: fishcode-linux-x64
+    runs-on: ${{ matrix.os }}
+    env:
+      # Build unsigned; no Apple identity is available on public CI.
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install shell dependencies
+        run: npm ci
+
+      # The dsh tree is kept out of asar and must be compiled for each target
+      # OS (koffi / node-pty native builds); no cross-compilation.
+      - name: Install dsh production dependencies
+        run: npm ci --omit=dev
+        working-directory: dsh-bundle
+
+      - name: Fetch standalone Node runtime
+        run: npm run runtime:fetch
+
+      - name: Package
+        run: npm run ${{ matrix.dist }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          if-no-files-found: error
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+            release/*.deb
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.dmg
+            artifacts/**/*.AppImage
+            artifacts/**/*.deb

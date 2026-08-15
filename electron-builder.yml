@@ -1,0 +1,50 @@
+appId: com.fishcode.app
+productName: Fishcode
+asar: true
+npmRebuild: false
+
+directories:
+  output: release
+
+# Only the compiled app is packaged into app.asar. The standalone Node runtime
+# cannot read asar, so node-runtime, the dsh dependency tree, and the bundled
+# skills all ship OUTSIDE asar via extraResources (resources/).
+files:
+  - out/**/*
+
+extraResources:
+  - from: node-runtime
+    to: node-runtime
+  - from: dsh-bundle/node_modules
+    to: dsh/node_modules
+  - from: out/skills
+    to: skills
+
+win:
+  target:
+    - nsis
+  icon: build/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  # build/installer.nsh: bust the Windows icon cache after install so the
+  # desktop shortcut shows the new icon instead of a stale cached one.
+  include: build/installer.nsh
+
+# Arch is chosen per-run (current arch by default; CI matrix drives x64/arm64)
+# so the fetched standalone Node runtime always matches the package it ships in.
+mac:
+  target:
+    - dmg
+  icon: build/icon.png
+  category: public.app-category.developer-tools
+
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: build/icon.png
+  category: Development

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+dsh-bundle/node_modules/
+
+# Build output
+out/
+dist/
+release/
+
+# Runtime downloads (fetched by scripts/fetch-runtime.mjs)
+node-runtime/
+
+# Native binaries
+*.exe
+*.dll
+*.node
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs / caches
+*.log
+.cache/
+.electron-cache/

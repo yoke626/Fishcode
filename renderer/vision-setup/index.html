@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'">
+  <link rel="stylesheet" href="styles.css">
+  <title>视觉服务设置</title>
+</head>
+<body>
+  <main id="app">
+    <header>
+      <h1 id="title"></h1>
+      <p id="subtitle"></p>
+    </header>
+    <p id="status"></p>
+    <div id="form">
+      <label class="field">
+        <span class="field-label" id="providerLabel"></span>
+        <select id="providerSelect"></select>
+      </label>
+      <p id="presetNote" class="note"></p>
+      <button type="button" id="getKeyBtn" class="btn btn-ghost linkish"></button>
+      <label class="field">
+        <span class="field-label" id="keyLabel"></span>
+        <div class="key-row">
+          <input id="keyInput" type="password" autocomplete="off" spellcheck="false">
+          <label class="show-key"><input type="checkbox" id="showKey"><span id="showKeyLabel"></span></label>
+        </div>
+      </label>
+      <p id="keyHelp" class="hint"></p>
+      <div id="customFields" hidden>
+        <label class="field">
+          <span class="field-label" id="customBaseUrlLabel"></span>
+          <input id="baseUrlInput" type="text" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="field">
+          <span class="field-label" id="customModelLabel"></span>
+          <input id="modelInput" type="text" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="field">
+          <span class="field-label" id="customProtocolLabel"></span>
+          <select id="protocolSelect"></select>
+        </label>
+        <p id="customNote" class="hint"></p>
+      </div>
+      <button type="button" id="applyBtn" class="btn btn-primary"></button>
+    </div>
+    <section id="result" hidden>
+      <h2 id="resultTitle"></h2>
+      <p id="resultMessage"></p>
+      <ol id="usageSteps"></ol>
+    </section>
+    <footer>
+      <p id="privacyLine"></p>
+    </footer>
+  </main>
+  <script src="vision-setup.js"></script>
+</body>
+</html>

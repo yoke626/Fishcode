@@ -1,0 +1,13 @@
+{
+  "name": "fishcode-dsh-bundle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bundled production-only dependency tree for the FISHCODE shell backend (kept out of asar).",
+  "scripts": {
+    "postinstall": "node ../scripts/patch-vision-vendor.mjs"
+  },
+  "dependencies": {
+    "@anionex/dsh-vision-toolkit": "^0.1.6",
+    "@deepseek-ai/dsh": "0.1.0-rc.6"
+  }
+}

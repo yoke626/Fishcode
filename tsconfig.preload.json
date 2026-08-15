@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src/preload",
+    "outDir": "out/preload",
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/preload/**/*"]
+}

@@ -1,0 +1,87 @@
+/* Startup loading screen: light, calm, obviously alive (matches WINDOW.main
+   backgroundColor #f5f7fa-ish light so the swap to dsh UI is not jarring). */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  background: #f5f5f7;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+#stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+#logo {
+  width: 88px;
+  height: 88px;
+  border-radius: 24px;
+  animation: float 2.4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Three rolling dots under the logo — the classic "still working" cue. */
+#waves {
+  display: flex;
+  gap: 8px;
+  height: 12px;
+  align-items: flex-end;
+}
+
+#waves span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #14b8a6;
+  animation: wave 1.2s ease-in-out infinite;
+}
+
+#waves span:nth-child(2) { animation-delay: 0.15s; }
+#waves span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes wave {
+  0%, 100% { transform: translateY(0); opacity: 0.45; }
+  50% { transform: translateY(-8px); opacity: 1; }
+}
+
+#status {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+#elapsed {
+  font-size: 13px;
+  color: #64748b;
+  min-height: 1.2em;
+}
+
+#retry {
+  margin-top: 4px;
+  padding: 8px 28px;
+  font-size: 14px;
+  border: 1px solid #14b8a6;
+  border-radius: 8px;
+  background: #14b8a6;
+  color: #fff;
+  cursor: pointer;
+}
+
+#retry:hover { background: #0d9488; }
+
+body.failed #status { color: #b91c1c; }
+body.failed #waves span { background: #f87171; }
