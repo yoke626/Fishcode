@@ -3,10 +3,6 @@
 // node binary into node-runtime/ so the packaged app can spawn the dsh backend
 // without a system Node. Version is pinned to the same major as dev so the
 // dsh-bundle native deps' ABI matches.
-//
-// Local dev shortcut (especially Windows Git Bash, where GNU tar shadows
-// bsdtar and can't read the .zip): just copy your system `node.exe` into
-// node-runtime/node.exe instead of running this script.
 import { createHash } from 'node:crypto'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rm, rename, readFile } from 'node:fs/promises'
@@ -70,6 +66,19 @@ function sha256(buffer) {
   return createHash('sha256').update(buffer).digest('hex')
 }
 
+async function extract(archivePath, extractDir) {
+  if (process.platform === 'win32') {
+    // The .zip archive cannot be opened by GNU tar, which Git for Windows puts
+    // on PATH ahead of the system bsdtar (that mix-up is what used to fail
+    // this step on the windows runner). PowerShell's Expand-Archive always
+    // resolves to a zip-capable extractor, so use it directly instead.
+    const ps = `Expand-Archive -LiteralPath '${archivePath.replace(/'/g, "''")}' -DestinationPath '${extractDir.replace(/'/g, "''")}' -Force`
+    await execFileAsync('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps])
+    return
+  }
+  await execFileAsync('tar', ['-xf', archivePath, '-C', extractDir])
+}
+
 const t = target()
 const workDir = join(tmpdir(), 'fishcode-runtime')
 await mkdir(workDir, { recursive: true })
@@ -98,12 +107,9 @@ const extractDir = join(workDir, 'extract')
 await rm(extractDir, { recursive: true, force: true })
 await mkdir(extractDir, { recursive: true })
 try {
-  await execFileAsync('tar', ['-xf', archivePath, '-C', extractDir])
+  await extract(archivePath, extractDir)
 } catch (error) {
-  console.error(
-    `[fetch-runtime] extraction failed (${error.message}). ` +
-      'On Windows Git Bash, copy your system node.exe to node-runtime/node.exe instead.',
-  )
+  console.error(`[fetch-runtime] extraction failed: ${error.message}`)
   throw error
 }
 
