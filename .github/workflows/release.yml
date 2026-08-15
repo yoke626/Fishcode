@@ -14,9 +14,10 @@ jobs:
           - os: windows-latest
             dist: dist:win
             artifact: fishcode-win-x64
-          - os: macos-13
-            dist: dist:mac:x64
-            artifact: fishcode-mac-x64
+          # Intel Mac (macos-13) is intentionally omitted: GitHub's Intel macOS
+          # runners are being phased out and queue for a very long time. Add an
+          # `os: macos-13 / dist:dist:mac:x64` entry back when Intel support is
+          # needed again.
           - os: macos-14
             dist: dist:mac:arm64
             artifact: fishcode-mac-arm64

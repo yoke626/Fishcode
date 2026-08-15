@@ -103,7 +103,7 @@ npm run dev                        # 编译并启动（开发模式直接用系�
 GitHub Actions 里：
 
 - `ci.yml`：PR / push 到 `main` 时做类型检查 + 构建。
-- `release.yml`：打 `v*` tag 后按矩阵构建 Windows NSIS / macOS dmg（x64 与 arm64 分别出）/ Linux AppImage + deb，并发布到 GitHub Release。
+- `release.yml`：打 `v*` tag 后按矩阵构建 Windows NSIS / macOS dmg（Apple 芯片）/ Linux AppImage + deb，并发布到 GitHub Release。
 
 > 安装包**未签名**：Windows 下 SmartScreen 会提示「未知发布者」，macOS 首次打开需到「系统设置 → 隐私与安全性」放行。
 
