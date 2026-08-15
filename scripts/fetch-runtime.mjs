@@ -5,7 +5,7 @@
 // dsh-bundle native deps' ABI matches.
 import { createHash } from 'node:crypto'
 import { createWriteStream } from 'node:fs'
-import { mkdir, rm, rename, readFile } from 'node:fs/promises'
+import { mkdir, rm, rename, copyFile, readFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -116,6 +116,16 @@ try {
 const outDir = join(root, 'node-runtime')
 await mkdir(outDir, { recursive: true })
 const outBin = join(outDir, t.binRel.split('/').pop())
-await rename(join(extractDir, t.innerDir, t.binRel), outBin)
+const srcBin = join(extractDir, t.innerDir, t.binRel)
+try {
+  await rename(srcBin, outBin)
+} catch (error) {
+  if (error.code !== 'EXDEV') throw error
+  // tmpdir and the repo can sit on different volumes (GitHub's windows runner
+  // puts the temp dir on C: and the workspace on D:), and rename(2) cannot
+  // move across devices. Fall back to copy; exec bits don't matter on Windows.
+  await copyFile(srcBin, outBin)
+  await rm(srcBin, { force: true })
+}
 await rm(archivePath, { force: true })
 console.log(`[fetch-runtime] wrote ${outBin}`)
