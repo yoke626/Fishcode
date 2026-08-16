@@ -146,7 +146,11 @@ export class PetController {
   private position(): void {
     const saved = this.deps.getPetPosition()
     if (saved) {
-      this.window.setPosition(saved.x, saved.y)
+      // The saved spot can end up off-screen (a monitor was unplugged, the
+      // resolution changed, or an older build let it be dragged past an edge)
+      // — clamp it back into the current work area rather than leave the pet
+      // invisible.
+      this.window.setPosition(...this.clampToWorkArea(saved.x, saved.y))
       return
     }
     const { workArea } = screen.getPrimaryDisplay()
@@ -154,6 +158,17 @@ export class PetController {
       workArea.x + workArea.width - WINDOW.pet.width - 24,
       workArea.y + workArea.height - WINDOW.pet.height - 24,
     )
+  }
+
+  /** Keep (x, y) inside the primary display's work area so the pet can't be lost. */
+  private clampToWorkArea(x: number, y: number): [number, number] {
+    const { workArea } = screen.getPrimaryDisplay()
+    const maxX = workArea.x + workArea.width - WINDOW.pet.width
+    const maxY = workArea.y + workArea.height - WINDOW.pet.height
+    return [
+      Math.min(Math.max(x, workArea.x), maxX),
+      Math.min(Math.max(y, workArea.y), maxY),
+    ]
   }
 
   private resendState(): void {
@@ -169,7 +184,9 @@ export class PetController {
     ipcMain.on(IPC.petDrag, (event, delta: { dx: number; dy: number }) => {
       if (!isTrustedSender(event, this.deps.registry)) return
       const [x, y] = this.window.getPosition()
-      this.window.setPosition(x + Math.round(delta.dx), y + Math.round(delta.dy))
+      this.window.setPosition(
+        ...this.clampToWorkArea(x + Math.round(delta.dx), y + Math.round(delta.dy)),
+      )
     })
 
     ipcMain.on(IPC.petDrop, (event) => {
