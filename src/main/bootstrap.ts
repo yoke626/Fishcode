@@ -8,7 +8,7 @@
  * settings.
  */
 
-import { app } from 'electron'
+import { app, shell } from 'electron'
 import { AutoLaunch } from './auto-launch'
 import { BackendManager } from './backend-manager'
 import { BootOverlayGuard } from './boot-overlay-guard'
@@ -19,6 +19,7 @@ import { NotificationService } from './notification-service'
 import { OpenWithService } from './open-with'
 import { PetController } from './pet/pet-controller'
 import { bundledSkillsDir, dshBinPath, nodeRuntimePath, runtimeContext, type RuntimeContext } from './runtime'
+import { DeepSeekBalance } from './deepseek-balance'
 import { ensureVisionToolkit } from './vision-toolkit'
 import { SettingsStore } from './settings-store'
 import { TrayController } from './tray'
@@ -28,7 +29,7 @@ import { MainWindow } from './windows/main-window'
 import { VisionSetupWindow } from './windows/vision-setup-window'
 import { WelcomeWindow } from './windows/welcome-window'
 import { IPC } from '../shared/channels'
-import { APP } from '../shared/constants'
+import { APP, URLS } from '../shared/constants'
 import { dshHome } from '../shared/paths'
 import { sanitizeSettingsPatch } from '../shared/settings'
 import { STRINGS } from '../shared/strings'
@@ -42,6 +43,7 @@ export class AppBootstrap {
   private readonly openWith = new OpenWithService()
   private openWithInstalled = false
   private readonly tray = new TrayController()
+  private readonly balance = new DeepSeekBalance()
   private readonly mainWindow: MainWindow
   private readonly pet: PetController
   private readonly welcome: WelcomeWindow
@@ -127,6 +129,10 @@ export class AppBootstrap {
     this.setupHotkey()
     this.showWelcomeIfNeeded()
 
+    // DeepSeek balance for the tray — non-blocking, failure degrades to a
+    // one-line label. Re-query when the user asks (tray item) and on reopen.
+    void this.refreshBalance()
+
     void this.refreshOpenWithState()
     const openPath = OpenWithService.parseOpenPath(process.argv)
     if (openPath) void this.forwardOpenPath(openPath)
@@ -186,6 +192,7 @@ export class AppBootstrap {
     this.bootGuard.disarm()
     this.hotkey.unregister()
     this.tray.destroy()
+    this.balance.dispose()
     this.completionWatcher.stop()
     this.pet.destroy()
     this.visionSetup.close()
@@ -305,6 +312,9 @@ export class AppBootstrap {
       petActions: () => this.pet.actionItems(),
       onPetAction: (state) => this.pet.play(state),
       isPetVisible: () => this.pet.isVisible(),
+      balanceLabel: () => this.balance.getLabel(),
+      onRefreshBalance: () => void this.refreshBalance(),
+      onOpenBalanceConsole: () => void shell.openExternal(URLS.apiKey),
       onQuit: () => app.quit(),
     })
     if (!ok) console.error(`[${APP.name}] tray icon unavailable`)
@@ -312,6 +322,16 @@ export class AppBootstrap {
 
   private openVisionSetup(): void {
     this.visionSetup.create()
+  }
+
+  /** Query the DeepSeek balance and repaint the tray label. Never throws. */
+  private async refreshBalance(): Promise<void> {
+    try {
+      await this.balance.refresh()
+    } catch (error) {
+      console.error(`[${APP.name}] balance refresh failed:`, error)
+    }
+    this.tray.rebuild()
   }
 
   private setupHotkey(): void {

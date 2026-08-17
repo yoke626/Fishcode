@@ -4,7 +4,7 @@
   "private": true,
   "description": "Bundled production-only dependency tree for the FISHCODE shell backend (kept out of asar).",
   "scripts": {
-    "postinstall": "node ../scripts/patch-vision-vendor.mjs"
+    "postinstall": "node ../scripts/patch-vision-vendor.mjs && node ../scripts/vendor-agent-presets.mjs"
   },
   "dependencies": {
     "@anionex/dsh-vision-toolkit": "^0.1.6",

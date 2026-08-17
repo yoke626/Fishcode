@@ -1,0 +1,31 @@
+# A/B bench profile: ride dsh-headless over dsh-base, keep the shipped +
+# per-user agent-preset roots (profile-boot adds them because `agent-presets`
+# is present), disable the stock one-shot runner, and drive both presets
+# through the custom `bench-runner.mjs` (reads BENCH_PRESET / BENCH_TASK).
+#
+# New rows go under `insert` (that is how the web-app bundle adds the preset
+# roster row); top-level `- id:` entries only override existing rows.
+#
+# Usage (see scripts/bench/run-bench.mjs):
+#   BENCH_PRESET=standard        node <repo>/dsh-bundle/node_modules/@deepseek-ai/dsh/lib/bin.js --profile bench
+#   BENCH_PRESET=router-standard node <repo>/dsh-bundle/node_modules/@deepseek-ai/dsh/lib/bin.js --profile bench
+
+# The stock one-shot startup demands a task positional and hard-exits without
+# one; bench-runner reads BENCH_TASK instead, so drop both headless app rows.
+- id: headless-runner
+  disabled: true
+
+- id: headless-startup
+  disabled: true
+
+- insert:
+    - id: agent-presets
+      name: '@deepseek-ai/dsh-agent-presets'
+      config:
+        default: standard
+
+    - id: bench-runner
+      name: './bench-runner.mjs'
+      config:
+        preset: !!js process.env.BENCH_PRESET ?? 'standard'
+        task: !!js process.env.BENCH_TASK ?? ''

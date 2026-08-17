@@ -76,6 +76,11 @@ export const STRINGS = {
     openWithInstall: '安装「用 FISHCODE 打开」',
     openWithInstalled: '「用 FISHCODE 打开」已安装',
     openWithMenu: '用 FISHCODE 打开',
+    balanceRefresh: '刷新余额',
+    balanceConsole: '打开 DeepSeek 控制台',
+    balanceLoading: 'DeepSeek 余额：查询中…',
+    balanceMissingKey: 'DeepSeek 余额：未配置 API Key',
+    balanceError: 'DeepSeek 余额：获取失败',
     quit: '退出',
   },
   menu: {

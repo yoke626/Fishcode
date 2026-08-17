@@ -25,6 +25,10 @@ export interface TrayDeps {
   petActions: () => Array<{ state: PetState; label: string }>
   onPetAction: (state: PetState) => void
   isPetVisible: () => boolean
+  /** Current one-line DeepSeek balance label (see deepseek-balance.ts). */
+  balanceLabel: () => string
+  onRefreshBalance: () => void
+  onOpenBalanceConsole: () => void
   onQuit: () => void
 }
 
@@ -53,6 +57,9 @@ export class TrayController {
     const template: Electron.MenuItemConstructorOptions[] = [
       { label: STRINGS.tray.show, click: this.deps.onShow },
       { label: STRINGS.tray.togglePet, click: this.deps.onTogglePet },
+      { label: this.deps.balanceLabel(), enabled: false },
+      { label: STRINGS.tray.balanceRefresh, click: () => void this.deps?.onRefreshBalance() },
+      { label: STRINGS.tray.balanceConsole, click: this.deps.onOpenBalanceConsole },
     ]
 
     if (petActions.length > 0) {

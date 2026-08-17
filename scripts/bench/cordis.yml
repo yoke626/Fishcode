@@ -1,0 +1,3 @@
+# bench profile root — an empty entry list (same shape as the web profile).
+# The composition is the bundles' patches + cordis.patch.yml below.
+[]

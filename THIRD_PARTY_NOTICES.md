@@ -1,0 +1,56 @@
+# Third-Party Notices
+
+FISHCODE 本体以 MIT 协议发布（见 [LICENSE](./LICENSE)）。本文件列出随仓库分发、但版权归其原作者所有的第三方代码与素材，并保留各许可证要求的版权与许可声明。
+
+## dsh-router-standard（router-standard 预设）
+
+仓库内置的 **Router Standard (experimental)** 会话预设，源码位于 `vendor/agent-presets/router-standard/`（由 `scripts/vendor-agent-presets.mjs` 在 `dsh-bundle` 安装后拷贝进后端的内置预设目录）。
+
+- 上游仓库：<https://github.com/yjh051108/dsh-router-standard>
+- 许可证：MIT，Copyright (c) 2026 yjh051108
+
+```
+MIT License
+
+Copyright (c) 2026 yjh051108
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+该预设自身的 NOTICE（上游声明其衍生来源，一并保留）：
+
+```
+This project builds on the DeepSeek Harness ecosystem and on prior open work:
+
+- preset/agent.cordis.yml is modified from the DeepSeek Harness Standard
+  agent preset (MIT). Original DeepSeek copyright and MIT license terms apply
+  to that file's derived content.
+- The first-turn anchoring mechanism (narrow tool surface, expand after the
+  first durable tool call) is a plugin-level port of the bootstrap filter in
+  xiaobright/dsh-anchored-standard (MIT).
+- The trajectory lexicon classifier follows xiaobright/modeltest (MIT).
+```
+
+> 说明：FISHCODE 只内置 `dsh-router-standard` 的 router-standard 预设本体（自包含，无注入器依赖）。同仓库的 `dsh-super-injector`（运行时注入器）与 `dsh-mode-boost` 均**未**内置。
+
+## 其他随依赖安装的第三方组件
+
+- `@deepseek-ai/dsh`（DeepSeek Harness 后端）及其原生依赖：由 `dsh-bundle/package.json` 声明，`npm ci` 安装，各自的许可证随 `node_modules` 内相应包分发。
+- `@anionex/dsh-vision-toolkit`（视觉插件）：同上；FISHCODE 对其有三处 vendored 补丁（见 README「视觉服务」一节）。
+- 萌宠/图标素材：EmoteLab（署名要求见 [CHARACTER.md](./CHARACTER.md) 的「素材出处与署名」）。

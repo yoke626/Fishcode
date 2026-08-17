@@ -21,6 +21,7 @@ FISHCODE 是一个 Electron 桌面壳：它在本地启动 DeepSeek Harness 的 
 - **完成通知**：监听任务目录的忙→闲变化，任务完成后弹系统通知并让萌宠冒泡。
 - **右键打开**（Windows 安装版）：给文件右键菜单加上「用 FISHCODE 打开」。
 - **单实例锁**：重复启动自动聚焦已有窗口，`--open <路径>` 会把路径转发给运行中的实例。
+- **Router Standard 预设**：内置任务感知的思维模式路由预设（MIT 授权，见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)），新建会话时在预设选择器里选「Router Standard (experimental)」即可启用。
 
 ## 工作原理
 
@@ -121,6 +122,16 @@ FISHCODE 通过 `DSH_BUNDLED_SKILL_DIR` 指向安装目录下的 `resources/skil
 
 技能使用 dsh 的真实契约：文件平铺在 `skills/` 下，frontmatter 必填 `name`（kebab-case，与文件名一致）与 `description`，可选 `whenToUse`。你自建的技能仍放在 `~/.dsh/skills`，与内置技能并存。
 
+## 内置预设
+
+FISHCODE 在 dsh 官方预设（标准 / 代码 / Cordis / 极简）之外，内置一个社区预设，通过 `scripts/vendor-agent-presets.mjs` 在 `dsh-bundle` 安装后拷贝进后端的内置预设目录：
+
+| 预设 | 说明 |
+|---|---|
+| `router-standard`（Router Standard (experimental)） | 任务感知的思维模式路由：首轮只暴露一句话 persona + shell/编辑器（RL 接口还原），首次工具调用后再放开完整标准工具集。针对弱模型（Flash）带的第一轮工具调用与推理链实测优化。 |
+
+源码位于 `vendor/agent-presets/router-standard/`，来自 [dsh-router-standard](https://github.com/yjh051108/dsh-router-standard)（MIT，© 2026 yjh051108），授权与衍生来源声明见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)。新建会话时在预设选择器里选它即可启用；同仓库的运行时注入器与 mode-boost 插件均**未**内置。
+
 ## 素材替换点
 
 当前图标、托盘图标与萌宠形象是**占位素材**，替换成你自己的原创角色无需动代码，投递素材 + 两条命令即可（完整规范见 [CHARACTER.md](./CHARACTER.md)，**注意其中「角色边界」：素材必须 100% 原创**）：
@@ -131,6 +142,6 @@ FISHCODE 通过 `DSH_BUNDLED_SKILL_DIR` 指向安装目录下的 `resources/skil
 
 ## 法律与致谢
 
-FISHCODE 是一份**原创重写**：架构上参考了 MIT 协议的开源项目 Bigfish 的经验，但代码、文案、素材均为原创，不是其分支或改名。仓库内提交的所有萌宠/图标素材必须为原创（见 [CHARACTER.md](./CHARACTER.md) 的「角色边界」），投递者需自行保证素材权利。**当前萌宠素材使用 EmoteLab 及其内置资源制作**（应其授权要求在公开场景署名，详见 [CHARACTER.md](./CHARACTER.md) 的「素材出处与署名」）。本项目以 MIT 协议发布，详见 [LICENSE](./LICENSE)。
+FISHCODE 是一份**原创重写**：架构上参考了 MIT 协议的开源项目 Bigfish 的经验，但代码、文案、素材均为原创，不是其分支或改名。仓库内提交的所有萌宠/图标素材必须为原创（见 [CHARACTER.md](./CHARACTER.md) 的「角色边界」），投递者需自行保证素材权利。**当前萌宠素材使用 EmoteLab 及其内置资源制作**（应其授权要求在公开场景署名，详见 [CHARACTER.md](./CHARACTER.md) 的「素材出处与署名」）。内置的 Router Standard 预设为第三方 MIT 代码，版权归原作者所有，署名与许可声明见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)。本项目以 MIT 协议发布，详见 [LICENSE](./LICENSE)。
 
 再次强调：本项目与 DeepSeek 官方无关，DeepSeek 及相关商标归其权利人所有。
