@@ -1,6 +1,6 @@
 {
   "name": "fishcode",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "FISHCODE — a desktop shell that wraps DeepSeek Harness's `dsh web` backend.",
   "main": "out/main/main/main.js",
   "license": "MIT",
@@ -25,6 +25,7 @@
     "dist:linux": "npm run build && electron-builder --linux --publish never",
     "icons": "node scripts/make-icons.mjs",
     "pet:prepare": "node scripts/prepare-pet-assets.mjs",
+    "update:e2e": "npx electron scripts/update-e2e.js",
     "runtime:fetch": "node scripts/fetch-runtime.mjs",
     "vision:patch": "node scripts/patch-vision-vendor.mjs"
   },
@@ -35,5 +36,8 @@
     "omggif": "^1.0.10",
     "sharp": "^0.33.5",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.4"
   }
 }

@@ -22,6 +22,8 @@ FISHCODE 是一个 Electron 桌面壳：它在本地启动 DeepSeek Harness 的 
 - **右键打开**（Windows 安装版）：给文件右键菜单加上「用 FISHCODE 打开」。
 - **单实例锁**：重复启动自动聚焦已有窗口，`--open <路径>` 会把路径转发给运行中的实例。
 - **Router Standard 预设**：内置任务感知的思维模式路由预设（MIT 授权，见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)），新建会话时在预设选择器里选「Router Standard (experimental)」即可启用。
+- **自动更新**：启动后后台检查 GitHub 新版本，托盘菜单可手动检查；发现新版下载完成后重启即静默覆盖安装，数据不丢失。
+- **会话管理**：dsh 侧边栏里删不掉的废弃聊天框，可在托盘菜单「会话管理…」窗口里按项目分组查看并批量删除（按「勾选空会话」一键选中所有无标题会话）。删除前二次确认，当前打开的会话与正在写入的会话自动保护不可删；删除后主窗口自动刷新同步。会话文件直接落在 `~/.dsh/sessions` 下，由独立的 Node 运行时枚举（支持 dsh 的多帧 zstd 日志格式），损坏的会话日志也能正常列出并删除。
 
 ## 工作原理
 
@@ -107,6 +109,18 @@ GitHub Actions 里：
 - `release.yml`：打 `v*` tag 后按矩阵构建 Windows NSIS / macOS dmg（Apple 芯片）/ Linux AppImage + deb，并发布到 GitHub Release。
 
 > 安装包**未签名**：Windows 下 SmartScreen 会提示「未知发布者」，macOS 首次打开需到「系统设置 → 隐私与安全性」放行。
+
+## 自动更新
+
+应用内置 `electron-updater` 自动更新：启动约 5 秒后在后台检查一次 GitHub Releases 的最新版本，托盘菜单的「检查更新…」可随时手动检查。
+
+- **流程**：发现新版 → 弹窗提示（当前/新版本、更新说明）→ 确认后下载（系统通知显示进度）→ 完成后「立即重启安装」→ 静默覆盖安装，无需卸载。
+- **更新源**：直连 GitHub Releases 资产（`releases/latest/download/`，**不经** `api.github.com`），境内网络多数加速器可用；网络受限时弹窗提供「手动下载」跳转发布页。
+- **数据安全**：NSIS 覆盖式安装，设置、密钥与对话数据（`~/.dsh`、`%APPDATA%/fishcode`）全部保留。
+- **平台限制**：macOS 未签名（Gatekeeper 会拦截自动安装）不启用自动更新，保持手动下载 dmg；Linux 仅 AppImage 版支持自动更新。
+- **首个带更新器的版本需要手动安装一次**：0.1.2 及更早的 release 没有 `latest.yml` 更新清单，无法被旧版本检测到；安装本版（0.1.3+）后，之后的版本即可自动更新。
+
+**给维护者**：`npm run dist:win` 会同时产出 `latest.yml` 与 `*.blockmap`（`--publish never` 只禁上传、不影响清单生成）；`release.yml` 会把它们一并上传到 GitHub Release。本地可跑 `npm run update:e2e`（`scripts/update-e2e.js`）对本地 HTTP feed 做全流程验证：检测 → 下载 → 安装提示，全程不碰 GitHub 与真实安装。环境变量 `FISHCODE_UPDATE_URL` 覆盖 feed 基址（境内镜像也可用），`FISHCODE_UPDATE_FORCE=1` 在未打包的 dev 运行下强制启用更新器（配合 `updateConfigPath` 指向临时 `dev-app-update.yml`，见脚本内注释）。
 
 ## 内置技能
 

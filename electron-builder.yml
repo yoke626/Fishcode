@@ -3,6 +3,16 @@ productName: Fishcode
 asar: true
 npmRebuild: false
 
+# Update feed for electron-updater. The generic provider points straight at the
+# GitHub "latest release" asset root (no api.github.com dependency — better for
+# users in mainland China where the API is often blocked / rate-limited).
+# electron-builder emits resources/app-update.yml from this; electron-builder
+# also generates latest.yml / latest-mac.yml / latest-linux.yml + *.blockmap
+# next to the installers, which CI must upload to the release (see release.yml).
+publish:
+  provider: generic
+  url: https://github.com/yoke626/Fishcode/releases/latest/download/
+
 directories:
   output: release
 
@@ -19,6 +29,11 @@ extraResources:
     to: dsh/node_modules
   - from: out/skills
     to: skills
+  # Session enumeration/deletion helper for the session-manager window. It runs
+  # under the bundled standalone Node (needs node:zstd, absent from Electron's
+  # Node 20), so it must live OUTSIDE asar.
+  - from: scripts/session-helper.mjs
+    to: session-helper.mjs
 
 win:
   target:

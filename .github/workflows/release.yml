@@ -60,6 +60,10 @@ jobs:
             release/*.dmg
             release/*.AppImage
             release/*.deb
+            release/latest.yml
+            release/latest-mac.yml
+            release/latest-linux.yml
+            release/*.blockmap
 
   release:
     needs: build
@@ -84,3 +88,7 @@ jobs:
             artifacts/**/*.dmg
             artifacts/**/*.AppImage
             artifacts/**/*.deb
+            artifacts/**/latest.yml
+            artifacts/**/latest-mac.yml
+            artifacts/**/latest-linux.yml
+            artifacts/**/*.blockmap

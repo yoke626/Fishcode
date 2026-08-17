@@ -35,4 +35,10 @@ export const IPC = {
   // Loading page (main <-> renderer/loading, via the main-window preload)
   loadingState: 'loading:state', // main -> loading: backend progress
   loadingRetry: 'loading:retry', // loading -> main: retry the backend start
+
+  // Session manager (main <-> renderer/session-manager)
+  sessionGetCopy: 'session:get-copy', // session-manager -> main (invoke): UI copy
+  sessionList: 'session:list', // session-manager -> main (invoke): on-disk sessions + current id
+  sessionDelete: 'session:delete', // session-manager -> main (invoke): delete selected folders
+  sessionRefreshMain: 'session:refresh-main', // session-manager -> main: reload the main window
 } as const

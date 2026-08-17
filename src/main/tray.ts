@@ -18,6 +18,7 @@ export interface TrayDeps {
   onShow: () => void
   onTogglePet: () => void
   onOpenVisionSetup: () => void
+  onOpenSessionManager: () => void
   onInstallOpenWith: () => void
   isOpenWithInstalled: () => boolean
   isOpenWithSupported: () => boolean
@@ -29,6 +30,7 @@ export interface TrayDeps {
   balanceLabel: () => string
   onRefreshBalance: () => void
   onOpenBalanceConsole: () => void
+  onCheckForUpdates: () => void
   onQuit: () => void
 }
 
@@ -73,7 +75,10 @@ export class TrayController {
       })
     }
 
-    template.push({ label: STRINGS.tray.visionSetup, click: this.deps.onOpenVisionSetup })
+    template.push(
+      { label: STRINGS.tray.visionSetup, click: this.deps.onOpenVisionSetup },
+      { label: STRINGS.tray.sessionManager, click: this.deps.onOpenSessionManager },
+    )
 
     if (this.deps.isOpenWithSupported()) {
       template.push(
@@ -84,6 +89,7 @@ export class TrayController {
     }
 
     template.push(
+      { label: STRINGS.tray.checkForUpdates, click: () => this.deps?.onCheckForUpdates() },
       { type: 'separator' },
       { label: STRINGS.tray.quit, click: this.deps.onQuit },
     )

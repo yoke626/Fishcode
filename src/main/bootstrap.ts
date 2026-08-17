@@ -20,12 +20,15 @@ import { OpenWithService } from './open-with'
 import { PetController } from './pet/pet-controller'
 import { bundledSkillsDir, dshBinPath, nodeRuntimePath, runtimeContext, type RuntimeContext } from './runtime'
 import { DeepSeekBalance } from './deepseek-balance'
+import { SessionManager } from './session-manager'
 import { ensureVisionToolkit } from './vision-toolkit'
 import { SettingsStore } from './settings-store'
 import { TrayController } from './tray'
+import { UpdateService } from './update-service'
 import { VisionService } from './vision-service'
 import { WindowRegistry } from './window-registry'
 import { MainWindow } from './windows/main-window'
+import { SessionManagerWindow } from './windows/session-manager-window'
 import { VisionSetupWindow } from './windows/vision-setup-window'
 import { WelcomeWindow } from './windows/welcome-window'
 import { IPC } from '../shared/channels'
@@ -44,11 +47,14 @@ export class AppBootstrap {
   private openWithInstalled = false
   private readonly tray = new TrayController()
   private readonly balance = new DeepSeekBalance()
+  private readonly updater: UpdateService
   private readonly mainWindow: MainWindow
   private readonly pet: PetController
   private readonly welcome: WelcomeWindow
   private readonly visionService: VisionService
   private readonly visionSetup: VisionSetupWindow
+  private readonly sessionManager: SessionManager
+  private readonly sessionManagerWindow: SessionManagerWindow
   private readonly completionWatcher: CompletionWatcher
   private readonly bootGuard: BootOverlayGuard
   private backend: BackendManager | null = null
@@ -80,6 +86,12 @@ export class AppBootstrap {
     })
     this.visionSetup = new VisionSetupWindow(this.registry)
 
+    this.sessionManager = new SessionManager({
+      getMainWindow: () => this.mainWindow.browserWindow,
+      onLog: (line) => console.log(`[${APP.name}] ${line}`),
+    })
+    this.sessionManagerWindow = new SessionManagerWindow(this.registry)
+
     this.completionWatcher = new CompletionWatcher({
       dir: dshHome(),
       onComplete: () => this.onTaskComplete(),
@@ -89,6 +101,12 @@ export class AppBootstrap {
 
     this.bootGuard = new BootOverlayGuard({
       getBaseUrl: () => this.backend?.getBaseUrl() ?? null,
+      onLog: (line) => console.log(`[${APP.name}] ${line}`),
+    })
+
+    this.updater = new UpdateService({
+      notifications: this.notifications,
+      getParentWindow: () => this.mainWindow.browserWindow,
       onLog: (line) => console.log(`[${APP.name}] ${line}`),
     })
   }
@@ -109,6 +127,7 @@ export class AppBootstrap {
       vision: this.visionService,
       onOpenVisionSetup: () => this.openVisionSetup(),
       onLoadingRetry: () => this.retryBackend(),
+      sessionManager: this.sessionManager,
     })
 
     this.settings.onChange((next) => {
@@ -132,6 +151,10 @@ export class AppBootstrap {
     // DeepSeek balance for the tray — non-blocking, failure degrades to a
     // one-line label. Re-query when the user asks (tray item) and on reopen.
     void this.refreshBalance()
+
+    // Non-blocking: schedules a delayed background update check (see
+    // update-service.ts), so startup never waits on the network.
+    this.updater.start()
 
     void this.refreshOpenWithState()
     const openPath = OpenWithService.parseOpenPath(process.argv)
@@ -193,9 +216,11 @@ export class AppBootstrap {
     this.hotkey.unregister()
     this.tray.destroy()
     this.balance.dispose()
+    this.updater.dispose()
     this.completionWatcher.stop()
     this.pet.destroy()
     this.visionSetup.close()
+    this.sessionManagerWindow.close()
     await this.backend?.stop()
     await this.settings.flush()
   }
@@ -306,6 +331,7 @@ export class AppBootstrap {
       onShow: () => this.mainWindow.show(),
       onTogglePet: () => this.togglePet(),
       onOpenVisionSetup: () => this.openVisionSetup(),
+      onOpenSessionManager: () => this.openSessionManager(),
       onInstallOpenWith: () => void this.installOpenWith(),
       isOpenWithInstalled: () => this.openWithInstalled,
       isOpenWithSupported: () => this.openWith.isSupported(),
@@ -315,6 +341,7 @@ export class AppBootstrap {
       balanceLabel: () => this.balance.getLabel(),
       onRefreshBalance: () => void this.refreshBalance(),
       onOpenBalanceConsole: () => void shell.openExternal(URLS.apiKey),
+      onCheckForUpdates: () => void this.updater.check(true),
       onQuit: () => app.quit(),
     })
     if (!ok) console.error(`[${APP.name}] tray icon unavailable`)
@@ -322,6 +349,10 @@ export class AppBootstrap {
 
   private openVisionSetup(): void {
     this.visionSetup.create()
+  }
+
+  private openSessionManager(): void {
+    this.sessionManagerWindow.create()
   }
 
   /** Query the DeepSeek balance and repaint the tray label. Never throws. */

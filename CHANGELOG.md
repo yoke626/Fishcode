@@ -1,5 +1,22 @@
 # Changelog
 
+## [v0.1.3] - 2026-08-17
+
+### 新增
+
+- **自动更新**：应用内自动检测 GitHub 新版本 → 下载 → 重启静默覆盖安装（`electron-updater`）。
+  - 启动后约 5 秒在后台检查一次；托盘菜单新增「检查更新…」可随时手动检查。
+  - 发现新版弹窗提示（当前版本 / 新版本 / 说明），确认后下载并在系统通知里显示进度；下载完成后可「立即重启安装」，或稍后再次触发。
+  - 境内网络友好：更新源走 github.com 资产直链（`releases/latest/download/`，不经 `api.github.com`）；网络受限时弹窗提供「手动下载」一键跳转 GitHub Releases 页。
+  - 数据安全：NSIS 覆盖式安装，`~/.dsh` 与 `%APPDATA%/fishcode`（设置、密钥、会话）均不受影响，无需先卸载。
+  - 平台说明：macOS 未签名会被 Gatekeeper 拦截，不启用自动更新（保持手动安装）；Linux 仅 AppImage 版支持自动更新（deb 不支持）。
+  - **注意：本版是首个带更新器的版本，需要手动安装一次；之后旧版本即可自动检测到新版本。**
+
+- **会话管理（清理删不掉的聊天框）**：dsh 侧边栏里部分废弃会话没有删除入口（后端无删除 RPC、行菜单只有重命名/归档），本版在托盘菜单新增「会话管理…」独立窗口。
+  - 按项目分组展示全部本地会话（标题 / 最近活跃 / 大小 / 当前打开 / 运行中 / 已损坏标记），支持标题搜索与「勾选空会话」一键选中所有无标题会话。
+  - 批量删除前二次确认；当前打开的会话与最近 60 秒内有写入的会话自动保护不可删；删除后主窗口自动刷新，侧边栏同步消失。
+  - 会话日志是 dsh 的多帧 zstd 格式（`~/.dsh/sessions/<scope>/session-<uuid>/session.jsonl.zstd`），由随包分发的独立 Node 24 运行时解析（Electron 自带的 Node 20 无 zstd 内建）；逐帧解码提取标题，损坏的日志文件以「已损坏」标记列出、不会拖垮整个列表，且可正常删除。
+
 ## [v0.1.2] - 2026-08-17
 
 ### 新增
@@ -38,7 +55,8 @@
 - 首次发布：Electron 桌面壳 + DeepSeek Harness 后端，含主窗口、托盘/快捷键/开机自启/系统通知、桌面萌宠（原创角色「蓝汐」，EmoteLab 素材）、新手向导、任务完成监听、右键「用 FISHCODE 打开」、视觉服务一键配置、启动加载页、CI 四平台构建（Windows / macOS arm64 / Linux）。
 - 随依赖分发的第三方组件：`@deepseek-ai/dsh`、`@anionex/dsh-vision-toolkit` 等，许可证随包分发。
 
-[unreleased]: https://github.com/yoke626/Fishcode/compare/v0.1.1...HEAD
+[unreleased]: https://github.com/yoke626/Fishcode/compare/v0.1.2...HEAD
+[v0.1.3]: https://github.com/yoke626/Fishcode/compare/v0.1.2...v0.1.3
 [v0.1.2]: https://github.com/yoke626/Fishcode/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/yoke626/Fishcode/compare/v0.1.0...v0.1.1
 [v0.1.0]: https://github.com/yoke626/Fishcode/releases/tag/v0.1.0

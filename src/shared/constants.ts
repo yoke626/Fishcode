@@ -37,6 +37,11 @@ export const WINDOW = {
     height: 760,
     backgroundColor: '#ffffff',
   },
+  sessionManager: {
+    width: 760,
+    height: 620,
+    backgroundColor: '#ffffff',
+  },
 } as const
 
 export const DSH = {
@@ -68,6 +73,9 @@ export const URLS = {
   apiKey: 'https://platform.deepseek.com',
   // Zhipu console key-management page, opened by the vision setup window.
   zhipuConsole: 'https://open.bigmodel.cn/usercenter/apikeys',
+  // GitHub release page, opened for a manual download when the in-app updater
+  // cannot reach the feed (see update-service.ts).
+  releases: 'https://github.com/yoke626/Fishcode/releases',
 } as const
 
 export const COMPLETION = {

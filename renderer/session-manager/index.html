@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'">
+  <link rel="stylesheet" href="styles.css">
+  <title>会话管理</title>
+</head>
+<body>
+  <main id="app">
+    <header>
+      <h1 id="title"></h1>
+      <p id="subtitle"></p>
+    </header>
+
+    <div id="toolbar" hidden>
+      <input id="searchInput" type="text" autocomplete="off" spellcheck="false">
+      <button type="button" id="selectEmptyBtn" class="btn btn-ghost"></button>
+      <button type="button" id="clearBtn" class="btn btn-ghost"></button>
+    </div>
+
+    <div id="status"></div>
+
+    <div id="listWrap" hidden>
+      <div id="groups"></div>
+      <div id="searchEmpty" class="list-empty" hidden></div>
+    </div>
+
+    <div id="result" hidden></div>
+
+    <footer id="footer" hidden>
+      <div id="summary"></div>
+      <button type="button" id="deleteBtn" class="btn btn-danger" disabled></button>
+      <p id="footerHint"></p>
+    </footer>
+
+    <div id="confirm" class="modal" hidden>
+      <div class="modal-box">
+        <h2 id="confirmTitle"></h2>
+        <p id="confirmBody"></p>
+        <div class="modal-actions">
+          <button type="button" id="confirmCancel" class="btn"></button>
+          <button type="button" id="confirmOk" class="btn btn-danger"></button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="session-manager.js"></script>
+</body>
+</html>
