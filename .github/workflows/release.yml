@@ -67,6 +67,10 @@ jobs:
     permissions:
       contents: write
     steps:
+      # body_path below reads RELEASE_NOTES.md, which only exists after
+      # checkout — without this step action-gh-release silently produces an
+      # empty release body.
+      - uses: actions/checkout@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
