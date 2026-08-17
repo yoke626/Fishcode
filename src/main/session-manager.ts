@@ -1,5 +1,5 @@
 /**
- * Session enumeration + deletion for the session-manager window.
+ * Session deletion for the dsh sidebar's three-dot menu.
  *
  * dsh web has no session-delete RPC, so FISHCODE owns cleanup itself: sessions
  * live on disk at `~/.dsh/sessions/<scope>/session-<uuid>/session.jsonl.zstd`,
@@ -84,6 +84,33 @@ export class SessionManager {
     return Array.isArray(parsed.sessions) ? parsed.sessions : []
   }
 
+  /** Locate a session id (bare or `session-<uuid>`) on disk, without decoding its log. */
+  async findFolder(
+    sessionId: string,
+  ): Promise<Array<{ folder: string; scope: string; active: boolean }>> {
+    const out = await this.runHelper(['find', sessionId])
+    const parsed = JSON.parse(out) as {
+      folders: Array<{ folder: string; scope: string; active: boolean }>
+    }
+    return Array.isArray(parsed.folders) ? parsed.folders : []
+  }
+
+  /**
+   * Delete a session by id — the dsh sidebar three-dot flow. Refuses the
+   * currently-open session (as reported by the page itself) and any log
+   * written in the last minute (a live task).
+   */
+  async deleteById(sessionId: string, isCurrent: boolean): Promise<DeleteResult> {
+    const failed: DeleteResult['failed'] = []
+    if (isCurrent) return { deleted: [], failed: [{ folder: sessionId, reason: 'current' }] }
+    const found = await this.findFolder(sessionId)
+    if (found.length === 0) return { deleted: [], failed: [{ folder: sessionId, reason: 'missing' }] }
+    if (found.some((entry) => entry.active)) {
+      return { deleted: [], failed: [{ folder: sessionId, reason: 'active' }] }
+    }
+    return this.delete([found[0].folder], null)
+  }
+
   /**
    * Delete session folders, refusing anything that is currently open or has
    * been written in the last minute (a live task). Returns the effective
@@ -119,15 +146,17 @@ export class SessionManager {
    * The session currently open in the dsh UI, read from the renderer's own
    * persisted selection (`dsh.sessions.current`, JSON with a `sessionId`).
    * Returns null when the main window isn't on the dsh page or can't respond.
+   * Bounded by a 2s timeout so a busy/hung dsh renderer can never stall an
+   * IPC handler forever.
    */
   async currentSessionId(): Promise<string | null> {
     const win = this.deps.getMainWindow()
     if (!win || win.isDestroyed()) return null
     try {
-      const raw = (await win.webContents.executeJavaScript(
-        'localStorage.getItem("dsh.sessions.current")',
-        true,
-      )) as string | null
+      const raw = (await Promise.race([
+        win.webContents.executeJavaScript('localStorage.getItem("dsh.sessions.current")', true),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000)),
+      ])) as string | null
       if (!raw) return null
       const parsed = JSON.parse(raw) as { sessionId?: unknown }
       return typeof parsed.sessionId === 'string' ? parsed.sessionId : null

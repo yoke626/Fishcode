@@ -36,9 +36,6 @@ export const IPC = {
   loadingState: 'loading:state', // main -> loading: backend progress
   loadingRetry: 'loading:retry', // loading -> main: retry the backend start
 
-  // Session manager (main <-> renderer/session-manager)
-  sessionGetCopy: 'session:get-copy', // session-manager -> main (invoke): UI copy
-  sessionList: 'session:list', // session-manager -> main (invoke): on-disk sessions + current id
-  sessionDelete: 'session:delete', // session-manager -> main (invoke): delete selected folders
-  sessionRefreshMain: 'session:refresh-main', // session-manager -> main: reload the main window
+  // Session delete (dsh sidebar three-dot menu, via the main-window preload)
+  sessionDeleteById: 'session:delete-by-id', // dsh page -> main (invoke): delete one session by id
 } as const

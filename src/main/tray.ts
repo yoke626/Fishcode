@@ -18,7 +18,6 @@ export interface TrayDeps {
   onShow: () => void
   onTogglePet: () => void
   onOpenVisionSetup: () => void
-  onOpenSessionManager: () => void
   onInstallOpenWith: () => void
   isOpenWithInstalled: () => boolean
   isOpenWithSupported: () => boolean
@@ -77,7 +76,6 @@ export class TrayController {
 
     template.push(
       { label: STRINGS.tray.visionSetup, click: this.deps.onOpenVisionSetup },
-      { label: STRINGS.tray.sessionManager, click: this.deps.onOpenSessionManager },
     )
 
     if (this.deps.isOpenWithSupported()) {

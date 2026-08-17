@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.1.4] - 2026-08-17
+
+### 重构
+
+- **会话删除改到侧边栏三点菜单**：移除独立的「会话管理」窗口，删除入口直接放进 dsh 侧边栏每个对话条的三点菜单（⋮ → 删除会话）。
+  - 删除全程在主窗口内完成：菜单项注入 dsh 自带的会话行菜单（通过 `scripts/patch-session-delete.mjs` 补丁，随 `dsh-bundle` 安装自动应用），点击后主进程原生弹窗二次确认，确认后由独立的 Node 运行时删除 `~/.dsh/sessions/<scope>/session-<uuid>/` 文件夹，主窗口自动刷新、侧边栏同步消失。
+  - 修复了原会话管理窗口在部分情况下进入删除流程后卡住无法操作的问题（窗口整体移除，问题不再存在）。
+  - 保护逻辑保留：当前打开的会话、最近 60 秒内有写入（运行中）的会话自动拒绝删除；找不到的会话提示可能已删除。
+  - **删除确认对话框的按键安全修复**：取消按钮置于首位且为默认按钮——按 ESC 或回车均只取消、不删除，只有显式点击「删除」才会真正删除。修复了测试中发现的原配置下按 ESC 会误删会话的问题。
+
 ## [v0.1.3] - 2026-08-17
 
 ### 新增
@@ -55,7 +65,8 @@
 - 首次发布：Electron 桌面壳 + DeepSeek Harness 后端，含主窗口、托盘/快捷键/开机自启/系统通知、桌面萌宠（原创角色「蓝汐」，EmoteLab 素材）、新手向导、任务完成监听、右键「用 FISHCODE 打开」、视觉服务一键配置、启动加载页、CI 四平台构建（Windows / macOS arm64 / Linux）。
 - 随依赖分发的第三方组件：`@deepseek-ai/dsh`、`@anionex/dsh-vision-toolkit` 等，许可证随包分发。
 
-[unreleased]: https://github.com/yoke626/Fishcode/compare/v0.1.2...HEAD
+[unreleased]: https://github.com/yoke626/Fishcode/compare/v0.1.3...HEAD
+[v0.1.4]: https://github.com/yoke626/Fishcode/compare/v0.1.3...v0.1.4
 [v0.1.3]: https://github.com/yoke626/Fishcode/compare/v0.1.2...v0.1.3
 [v0.1.2]: https://github.com/yoke626/Fishcode/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/yoke626/Fishcode/compare/v0.1.0...v0.1.1

@@ -37,11 +37,6 @@ export const WINDOW = {
     height: 760,
     backgroundColor: '#ffffff',
   },
-  sessionManager: {
-    width: 760,
-    height: 620,
-    backgroundColor: '#ffffff',
-  },
 } as const
 
 export const DSH = {

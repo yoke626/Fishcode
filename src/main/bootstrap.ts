@@ -8,7 +8,7 @@
  * settings.
  */
 
-import { app, shell } from 'electron'
+import { app, dialog, shell } from 'electron'
 import { AutoLaunch } from './auto-launch'
 import { BackendManager } from './backend-manager'
 import { BootOverlayGuard } from './boot-overlay-guard'
@@ -28,7 +28,6 @@ import { UpdateService } from './update-service'
 import { VisionService } from './vision-service'
 import { WindowRegistry } from './window-registry'
 import { MainWindow } from './windows/main-window'
-import { SessionManagerWindow } from './windows/session-manager-window'
 import { VisionSetupWindow } from './windows/vision-setup-window'
 import { WelcomeWindow } from './windows/welcome-window'
 import { IPC } from '../shared/channels'
@@ -54,7 +53,6 @@ export class AppBootstrap {
   private readonly visionService: VisionService
   private readonly visionSetup: VisionSetupWindow
   private readonly sessionManager: SessionManager
-  private readonly sessionManagerWindow: SessionManagerWindow
   private readonly completionWatcher: CompletionWatcher
   private readonly bootGuard: BootOverlayGuard
   private backend: BackendManager | null = null
@@ -90,7 +88,6 @@ export class AppBootstrap {
       getMainWindow: () => this.mainWindow.browserWindow,
       onLog: (line) => console.log(`[${APP.name}] ${line}`),
     })
-    this.sessionManagerWindow = new SessionManagerWindow(this.registry)
 
     this.completionWatcher = new CompletionWatcher({
       dir: dshHome(),
@@ -128,6 +125,8 @@ export class AppBootstrap {
       onOpenVisionSetup: () => this.openVisionSetup(),
       onLoadingRetry: () => this.retryBackend(),
       sessionManager: this.sessionManager,
+      confirmSessionDelete: (title) => this.confirmSessionDelete(title),
+      notifySession: (message) => this.notifications.show(STRINGS.sessionDelete.notifyTitle, message),
     })
 
     this.settings.onChange((next) => {
@@ -220,7 +219,6 @@ export class AppBootstrap {
     this.completionWatcher.stop()
     this.pet.destroy()
     this.visionSetup.close()
-    this.sessionManagerWindow.close()
     await this.backend?.stop()
     await this.settings.flush()
   }
@@ -331,7 +329,6 @@ export class AppBootstrap {
       onShow: () => this.mainWindow.show(),
       onTogglePet: () => this.togglePet(),
       onOpenVisionSetup: () => this.openVisionSetup(),
-      onOpenSessionManager: () => this.openSessionManager(),
       onInstallOpenWith: () => void this.installOpenWith(),
       isOpenWithInstalled: () => this.openWithInstalled,
       isOpenWithSupported: () => this.openWith.isSupported(),
@@ -351,8 +348,32 @@ export class AppBootstrap {
     this.visionSetup.create()
   }
 
-  private openSessionManager(): void {
-    this.sessionManagerWindow.create()
+  /**
+   * Native confirm before the dsh sidebar three-dot delete wipes a session
+   * folder. The session title (from the row) is shown as context.
+   */
+  private async confirmSessionDelete(title: string | null): Promise<boolean> {
+    const label = title ?? STRINGS.sessionDelete.noTitle
+    const detail = STRINGS.sessionDelete.confirmBody.replace('{title}', label)
+    // 取消 is deliberately FIRST and the default/cancel button: Enter and Esc
+    // both land on the safe action, and deleting requires an explicit click on
+    // 删除. (Empirically Electron's Windows MessageBox returns index 0 for Esc
+    // regardless of cancelId, so the safe button must occupy index 0.)
+    const options: Electron.MessageBoxOptions = {
+      type: 'warning',
+      title: STRINGS.sessionDelete.confirmTitle,
+      message: STRINGS.sessionDelete.confirmTitle,
+      detail,
+      buttons: [STRINGS.sessionDelete.cancel, STRINGS.sessionDelete.confirmDelete],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    }
+    const parent = this.mainWindow.browserWindow
+    const { response } =
+      parent && !parent.isDestroyed() ? await dialog.showMessageBox(parent, options) : await dialog.showMessageBox(options)
+    // 删除 is now index 1; anything else is a cancel.
+    return response === 1
   }
 
   /** Query the DeepSeek balance and repaint the tray label. Never throws. */

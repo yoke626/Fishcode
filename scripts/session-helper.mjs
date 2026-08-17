@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Session enumeration + deletion helper for the FISHCODE session-manager
- * window. Runs under the BUNDLED standalone Node (see node-runtime/) rather
+ * Session lookup + deletion helper for the dsh sidebar three-dot delete. Runs
+ * under the BUNDLED standalone Node (see node-runtime/) rather
  * than Electron's own Node 20: it needs `node:zlib`'s zstd builtins
  * (`zstdDecompressSync`), which shipped in Node 24 and are absent from the
  * Electron runtime. The helper is deliberately self-contained — it inlines the
@@ -17,6 +17,7 @@
  *
  * Usage:
  *   node session-helper.mjs list
+ *   node session-helper.mjs find <session-id>
  *   node session-helper.mjs delete <abs-session-folder> [...]
  *
  * Output is a single JSON line on stdout; diagnostics go to stderr. Exit 0 on
@@ -225,6 +226,53 @@ function listSessions() {
   return { sessions }
 }
 
+/**
+ * Resolve a session id (dsh's bare id or `session-<uuid>`) to its on-disk
+ * folder(s). Fast path: no zstd decoding, just a directory scan plus an mtime
+ * stat, so the sidebar three-dot delete can locate a session instantly.
+ */
+function findSession(id) {
+  const normalized = String(id || '').replace(/^session-/, '')
+  if (!/^[0-9A-Za-z-]{8,64}$/.test(normalized)) return { folders: [] }
+  const want = `session-${normalized}`
+  const root = sessionsRoot()
+  const folders = []
+  let scopeDir = null
+  try {
+    scopeDir = readdirSync(root, { withFileTypes: true })
+  } catch {
+    /* sessions root missing */
+  }
+  if (scopeDir) {
+    for (const entry of scopeDir) {
+      if (!entry.isDirectory() || !entry.name.startsWith('--')) continue
+      const scopePath = join(root, entry.name)
+      let sessionEntries
+      try {
+        sessionEntries = readdirSync(scopePath, { withFileTypes: true })
+      } catch {
+        continue
+      }
+      for (const session of sessionEntries) {
+        if (!session.isDirectory() || session.name !== want) continue
+        const folder = join(scopePath, session.name)
+        let mtimeMs = 0
+        try {
+          mtimeMs = statSync(join(folder, 'session.jsonl.zstd')).mtimeMs
+        } catch {
+          try {
+            mtimeMs = statSync(join(folder, 'session.jsonl')).mtimeMs
+          } catch {
+            /* keep mtime 0 */
+          }
+        }
+        folders.push({ folder, scope: entry.name, active: Date.now() - mtimeMs < ACTIVE_WINDOW_MS })
+      }
+    }
+  }
+  return { folders }
+}
+
 /** Guard: a session folder must sit directly under the sessions root. */
 function isSessionFolder(folder) {
   const root = resolve(sessionsRoot())
@@ -261,6 +309,17 @@ if (command === 'list') {
     process.stdout.write(JSON.stringify(listSessions()))
   } catch (error) {
     process.stderr.write(`session-helper list failed: ${error?.message ?? error}\n`)
+    process.exit(1)
+  }
+} else if (command === 'find') {
+  if (args.length === 0) {
+    process.stderr.write('session-helper find: no session id given\n')
+    process.exit(1)
+  }
+  try {
+    process.stdout.write(JSON.stringify(findSession(args[0])))
+  } catch (error) {
+    process.stderr.write(`session-helper find failed: ${error?.message ?? error}\n`)
     process.exit(1)
   }
 } else if (command === 'delete') {

@@ -29,7 +29,7 @@ extraResources:
     to: dsh/node_modules
   - from: out/skills
     to: skills
-  # Session enumeration/deletion helper for the session-manager window. It runs
+  # Session lookup/deletion helper for the dsh sidebar three-dot delete. It runs
   # under the bundled standalone Node (needs node:zstd, absent from Electron's
   # Node 20), so it must live OUTSIDE asar.
   - from: scripts/session-helper.mjs

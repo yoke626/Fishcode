@@ -24,6 +24,29 @@ export interface IpcDeps {
   onOpenVisionSetup: () => void
   onLoadingRetry: () => void
   sessionManager: SessionManager
+  /** Native confirm before an irreversible session delete; resolves to the user's choice. */
+  confirmSessionDelete: (title: string | null) => Promise<boolean>
+  /** System notification for delete refusals/failures (no renderer in the dsh page flow). */
+  notifySession: (message: string) => void
+}
+
+interface SessionDeleteRequest {
+  sessionId: string
+  isCurrent: boolean
+  title: string | null
+}
+
+/** Validate the dsh-side delete payload (`{ sessionId, isCurrent, title? }`). */
+function parseSessionDeleteRequest(value: unknown): SessionDeleteRequest | null {
+  if (!value || typeof value !== 'object') return null
+  const v = value as Record<string, unknown>
+  const normalized = typeof v.sessionId === 'string' ? v.sessionId.replace(/^session-/, '') : ''
+  if (!/^[0-9A-Za-z-]{8,64}$/.test(normalized)) return null
+  return {
+    sessionId: typeof v.sessionId === 'string' ? v.sessionId : '',
+    isCurrent: v.isCurrent === true,
+    title: typeof v.title === 'string' && v.title.length > 0 ? v.title.slice(0, 200) : null,
+  }
 }
 
 export function registerIpc(deps: IpcDeps): void {
@@ -83,50 +106,49 @@ export function registerIpc(deps: IpcDeps): void {
     deps.onLoadingRetry()
   })
 
-  ipcMain.handle(IPC.sessionGetCopy, (event) => {
+  ipcMain.handle(IPC.sessionDeleteById, async (event, payload: unknown) => {
     if (!isTrustedSender(event, deps.registry)) return null
-    return STRINGS.sessionManager
-  })
+    const request = parseSessionDeleteRequest(payload)
+    if (!request) return { ok: false, reason: 'invalid-request' }
 
-  ipcMain.handle(IPC.sessionList, async (event) => {
-    if (!isTrustedSender(event, deps.registry)) return null
     try {
-      const [sessions, currentSessionId] = await Promise.all([
-        deps.sessionManager.list(),
-        deps.sessionManager.currentSessionId(),
-      ])
-      return {
-        ready: deps.sessionManager.ready,
-        sessions,
-        currentSessionId,
-        runtimeLabel: deps.sessionManager.runtimeLabel,
+      // The page itself reports whether this row is the currently-open session.
+      if (request.isCurrent) {
+        deps.notifySession(STRINGS.sessionDelete.refusedCurrent)
+        return { ok: false, reason: 'current' }
       }
-    } catch (error) {
-      console.error('[session] list failed:', error)
-      return { ready: deps.sessionManager.ready, sessions: [], currentSessionId: null, error: String(error) }
-    }
-  })
+      const found = await deps.sessionManager.findFolder(request.sessionId)
+      if (found.length === 0) {
+        deps.notifySession(STRINGS.sessionDelete.missing)
+        return { ok: false, reason: 'missing' }
+      }
+      if (found.some((entry) => entry.active)) {
+        deps.notifySession(STRINGS.sessionDelete.refusedActive)
+        return { ok: false, reason: 'active' }
+      }
 
-  ipcMain.handle(IPC.sessionDelete, async (event, payload: unknown) => {
-    if (!isTrustedSender(event, deps.registry)) return null
-    // Folders are a flat array of absolute paths; anything else is refused.
-    if (!Array.isArray(payload) || !payload.every((p) => typeof p === 'string')) {
-      return { deleted: [], failed: [{ folder: '', reason: 'invalid-request' }] }
-    }
-    const folders = payload as string[]
-    const currentSessionId = await deps.sessionManager.currentSessionId()
-    try {
-      const result = await deps.sessionManager.delete(folders, currentSessionId)
-      if (result.deleted.length > 0) deps.sessionManager.refreshMainWindow()
-      return result
-    } catch (error) {
-      console.error('[session] delete failed:', error)
-      return { deleted: [], failed: [{ folder: '', reason: String(error) }] }
-    }
-  })
+      // Deleting wipes the whole session history — confirm before rm -rf.
+      const confirmed = await deps.confirmSessionDelete(request.title)
+      if (!confirmed) return { ok: false, reason: 'cancelled' }
 
-  ipcMain.on(IPC.sessionRefreshMain, (event) => {
-    if (!isTrustedSender(event, deps.registry)) return
-    deps.sessionManager.refreshMainWindow()
+      const result = await deps.sessionManager.deleteById(request.sessionId, false)
+      if (result.deleted.length > 0) {
+        deps.sessionManager.refreshMainWindow()
+        return { ok: true }
+      }
+      const reason = result.failed[0]?.reason ?? 'unknown'
+      deps.notifySession(
+        reason === 'current'
+          ? STRINGS.sessionDelete.refusedCurrent
+          : reason === 'active'
+            ? STRINGS.sessionDelete.refusedActive
+            : STRINGS.sessionDelete.failed.replace('{detail}', reason),
+      )
+      return { ok: false, reason }
+    } catch (error) {
+      console.error('[session] delete-by-id failed:', error)
+      deps.notifySession(STRINGS.sessionDelete.failed.replace('{detail}', String(error)))
+      return { ok: false, reason: String(error) }
+    }
   })
 }
