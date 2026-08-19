@@ -1,5 +1,20 @@
 # Changelog
 
+## [v0.1.5] - 2026-08-19
+
+### 升级
+
+- **dsh 后端升级到 `@deepseek-ai/dsh@0.1.0-rc.7`**：跟随 DeepSeek Harness 官方候选版升级，为 rc.7 插件生态铺路；现有会话删除补丁、视觉补丁与内置 Router Standard 预设均已验证可继续工作。
+- **内置视觉插件升级到 `@anionex/dsh-vision-toolkit@0.1.34`**：从 0.1.6 升级，带来透明变体路由、内置免费视觉、Windows Python 支持等新能力；同步适配 `scripts/patch-vision-vendor.mjs`，保留并兼容 0.1.34 新增的 focusin 预取逻辑，继续提供拖入图片转路径、超限图片自动压缩、`max_tokens` 钳制三处 vendored 补丁。
+
+### 新增
+
+- **内置 `dsh-genui`**：模型回答里可直接渲染可交互 UI（图表、表单、面板、测验、3D 等），无需额外安装。
+- **内置 `dsh-better-sidebar`**：VSCode 风格右侧工作台（文件资源管理器 / 编辑器 / 终端 / Git / 内嵌浏览器）。
+- **内置 dsh-web-ui 鲸鱼娘宠物 + 皮肤中心**：桌面端默认改用 web 内鲸鱼娘宠物，并内置 12 款皮肤可在设置中试穿/应用；原生桌面萌宠默认关闭，但保留为可选项（托盘可重新开启）。
+- **内置 `dshmarket` 插件市场**：在 dsh 设置页里直接浏览、搜索、安装社区插件，方便发现更多插件。
+- **插件挂载机制泛化**：`vision-toolkit.ts` 升级为通用 bundled-plugin 注册器，支持一次挂载多个内置插件；新增 `scripts/check-bundled-plugins.js` 与 `scripts/smoke-bundled-backend.mjs` 用于验证。
+
 ## [v0.1.4] - 2026-08-17
 
 ### 重构

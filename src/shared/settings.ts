@@ -10,22 +10,24 @@ export interface PetPosition {
 }
 
 export interface Settings {
-  version: 1
+  version: 2
   onboardingDone: boolean
   minimizeToTray: boolean
   autoLaunch: boolean
+  /** Native desktop pet. Since the dsh-web-ui whale pet is bundled, this
+   *  defaults to off; users can still re-enable the native pet from the tray. */
   petEnabled: boolean
   petPosition: PetPosition | null
 }
 
-export const SETTINGS_VERSION = 1
+export const SETTINGS_VERSION = 2
 
 export const DEFAULT_SETTINGS: Settings = {
   version: SETTINGS_VERSION,
   onboardingDone: false,
   minimizeToTray: true,
   autoLaunch: false,
-  petEnabled: true,
+  petEnabled: false,
   petPosition: null,
 }
 

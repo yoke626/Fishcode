@@ -193,6 +193,13 @@ const HANDLE_DROP_V1_MARKER = 'const card = droppedOn instanceof HTMLElement'
 const DROP_EFFECT_V2_SNIPPET = `    ctx.effect(() => {
         const listener = (event) => { controller.handlePaste(event); };
         document.addEventListener('paste', listener, true);
+        // A focus-time prefetch has the verdict ready before the first paste can land.
+        const onFocusIn = () => {
+            const sessionId = ctx.sessions.list.getSnapshot().current;
+            if (sessionId !== undefined)
+                controller.refreshVerdict(String(sessionId), currentModelLabel());
+        };
+        document.addEventListener('focusin', onFocusIn, true);
         // FISHCODE vendored patch: capture image-file drops AND the dragenter/
         // dragover that arm DSH's full-page drop overlay. Dropped images go
         // through the same path-reference pipeline as paste; suppressing the
@@ -212,6 +219,7 @@ const DROP_EFFECT_V2_SNIPPET = `    ctx.effect(() => {
         document.addEventListener('dragover', dragListener, true);
         return () => {
             document.removeEventListener('paste', listener, true);
+            document.removeEventListener('focusin', onFocusIn, true);
             document.removeEventListener('drop', dropListener, true);
             document.removeEventListener('dragenter', dragListener, true);
             document.removeEventListener('dragover', dragListener, true);
@@ -239,6 +247,25 @@ const PRISTINE_DROP_EFFECT = `    ctx.effect(() => {
         const listener = (event) => { controller.handlePaste(event); };
         document.addEventListener('paste', listener, true);
         return () => { document.removeEventListener('paste', listener, true); };
+    }, 'dsh-vision-toolkit: clipboard image capture');`
+
+// 0.1.34+ added a focus-time verdict prefetch inside the same capture effect.
+// Keep it when replacing the block, or the transparent-variant routing loses
+// its readiness prefetch.
+const PRISTINE_DROP_EFFECT_V2 = `    ctx.effect(() => {
+        const listener = (event) => { controller.handlePaste(event); };
+        // A focus-time prefetch has the verdict ready before the first paste can land.
+        const onFocusIn = () => {
+            const sessionId = ctx.sessions.list.getSnapshot().current;
+            if (sessionId !== undefined)
+                controller.refreshVerdict(String(sessionId), currentModelLabel());
+        };
+        document.addEventListener('paste', listener, true);
+        document.addEventListener('focusin', onFocusIn, true);
+        return () => {
+            document.removeEventListener('paste', listener, true);
+            document.removeEventListener('focusin', onFocusIn, true);
+        };
     }, 'dsh-vision-toolkit: clipboard image capture');`
 
 /**
@@ -379,7 +406,12 @@ function patchWebClient() {
       source = source.replace(v1, eolify(DROP_EFFECT_V2_SNIPPET, eol))
       changed = true
     } else {
-      const anchor = eolify(PRISTINE_DROP_EFFECT, eol)
+      // 0.1.34+ ships the focusin prefetch inside this effect; older builds
+      // ship only the paste listener. Accept either pristine shape and replace
+      // it with the FISHCODE drop-aware capture effect (which keeps focusin).
+      const anchorV2 = eolify(PRISTINE_DROP_EFFECT_V2, eol)
+      const anchorV1 = eolify(PRISTINE_DROP_EFFECT, eol)
+      const anchor = source.includes(anchorV2) ? anchorV2 : anchorV1
       if (!source.includes(anchor)) {
         throw new Error(`patch anchor (paste capture listener) not found in ${WEB_CLIENT_PATH}; @anionex/dsh-vision-toolkit may have changed`)
       }

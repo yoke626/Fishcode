@@ -1,25 +1,23 @@
 /**
- * Registers the bundled `@anionex/dsh-vision-toolkit` profile bundle with the
- * local `dsh web` backend — without pnpm. The bundle gives text-only models
- * (the DeepSeek official API is text-only) a `vision-tools` skill and ten
- * `vision_*` tools that delegate image understanding to a separate vision API
- * or to local Python tooling.
+ * Registers FISHCODE's bundled dsh plugins with the local `dsh web` backend —
+ * without pnpm or the `dsh plugin` CLI.
  *
- * Two things must be true before the next `dsh web` spawn so the cordis loader
- * can import the bundle:
+ * Each bundled plugin must be true before the next `dsh web` spawn so the
+ * cordis loader can import it:
  *
- *   1. The bundle and its non-peer dependency closure must resolve from the
+ *   1. The package and its non-peer dependency closure must resolve from the
  *      profile module fallback `$DSH_HOME/profiles/node_modules`. dsh's own
  *      `healProfilesModuleFallback` junctions the app's closure there; we
- *      junction the bundle + its hoisted deps (`saxes` → `xmlchars`) the same
- *      way, as *foreign* entries dsh leaves untouched.
- *   2. The bundle must be registered in the composed tree. Instead of editing
- *      the user's `cordis.patch.yml`, we write a tiny `--patch` overlay and
- *      pass it on every spawn (it is applied after the profile + home layers).
+ *      junction the bundled plugin + its hoisted deps the same way, as
+ *      *foreign* entries dsh leaves untouched.
+ *   2. The plugin must be registered in the composed tree. Instead of editing
+ *      the user's `cordis.patch.yml`, we write one `--patch` overlay per
+ *      bundled plugin and pass them all on every spawn. The overlay content is
+ *      copied verbatim from each package's own `cordis.patch.yml`, so any
+ *      plugin-specific mount row / guard expression is preserved.
  *
- * Peer dependencies (`@deepseek-ai/*`, `cordis`, `schemastery`, `react`) are
- * already resolved by dsh's healed fallback and are deliberately not linked
- * here.
+ * Peer dependencies (`@deepseek-ai/*`, `cordis`, `react`, etc.) are already
+ * resolved by dsh's healed fallback and are deliberately not linked here.
  */
 
 import {
@@ -39,24 +37,75 @@ import { dshModuleDir, type RuntimeContext } from './runtime'
 export const VISION_TOOLKIT_BUNDLE = '@anionex/dsh-vision-toolkit'
 export const VISION_TOOLKIT_OVERLAY_FILENAME = 'vision-toolkit.patch.yml'
 
-/** The cordis insert row that mounts the bundle; mirrors the bundle's own `cordis.patch.yml`. */
-const INSERT_PATCH = `# FISHCODE: mount the bundled vision-toolkit profile bundle.\n- insert:\n    - id: vision-toolkit\n      name: '${VISION_TOOLKIT_BUNDLE}'\n`
-
 export type LinkStatus = 'created' | 'kept' | 'conflict' | 'missing'
 
-export interface VisionToolkitLink {
+export interface PluginLink {
   name: string
   status: LinkStatus
 }
 
-export interface VisionToolkitResult {
+export interface BundledPluginResult {
+  id: string
+  packageName: string
   overlayPath: string
-  linked: VisionToolkitLink[]
+  linked: PluginLink[]
 }
 
-/** Absolute path of the `--patch` overlay FISHCODE writes and passes to dsh. */
+export interface BundledPluginSpec {
+  id: string
+  packageName: string
+  /** Overlay file name under `$DSH_HOME`. Kept stable and unique per plugin. */
+  overlayFilename: string
+}
+
+/**
+ * The plugins FISHCODE ships out of the box. The overlay row is read from each
+ * package's own `cordis.patch.yml`, so adding a new bundled plugin is just a
+ * new entry here + a dependency in `dsh-bundle/package.json`.
+ */
+export const BUNDLED_PLUGINS: readonly BundledPluginSpec[] = [
+  {
+    id: 'vision-toolkit',
+    packageName: VISION_TOOLKIT_BUNDLE,
+    overlayFilename: VISION_TOOLKIT_OVERLAY_FILENAME,
+  },
+  {
+    id: 'genui',
+    packageName: '@omdsh-dev/dsh-genui',
+    overlayFilename: 'dsh-genui.patch.yml',
+  },
+  {
+    id: 'better-sidebar',
+    packageName: 'dsh-better-sidebar',
+    overlayFilename: 'dsh-better-sidebar.patch.yml',
+  },
+  {
+    id: 'pet',
+    packageName: '@linxin666/dsh-pet',
+    overlayFilename: 'dsh-pet.patch.yml',
+  },
+  {
+    id: 'ui-skin-center',
+    packageName: '@linxin666/dsh-client-ui-skin-center',
+    overlayFilename: 'dsh-skin-center.patch.yml',
+  },
+  {
+    id: 'dsh-market',
+    packageName: 'dshmarket',
+    overlayFilename: 'dshmarket.patch.yml',
+  },
+]
+
+/** Absolute path of the `--patch` overlay FISHCODE writes for one plugin. */
+export function bundledPluginOverlayPath(packageName: string): string {
+  const spec = BUNDLED_PLUGINS.find((entry) => entry.packageName === packageName)
+  if (!spec) throw new Error(`unknown bundled plugin: ${packageName}`)
+  return join(dshHome(), spec.overlayFilename)
+}
+
+/** Back-compat alias for callers that only care about the vision toolkit. */
 export function visionToolkitOverlayPath(): string {
-  return join(dshHome(), VISION_TOOLKIT_OVERLAY_FILENAME)
+  return bundledPluginOverlayPath(VISION_TOOLKIT_BUNDLE)
 }
 
 function linkType(): 'junction' | 'dir' {
@@ -94,7 +143,7 @@ function ensureLink(link: string, target: string): LinkStatus {
 }
 
 /**
- * Collect the bundle's non-peer runtime dependency closure from the bundled
+ * Collect the package's non-peer runtime dependency closure from the bundled
  * dsh `node_modules` (BFS over `dependencies` only). Peer dependencies are
  * resolved by dsh's own fallback and are intentionally excluded.
  */
@@ -122,21 +171,44 @@ function collectClosure(moduleDir: string, root: string): string[] {
 }
 
 /**
- * Idempotently prepare the vision-toolkit bundle for the next `dsh web` spawn:
- * junction the bundle + its closure into the profile fallback and (re)write the
- * `--patch` overlay. Safe to run before every backend start.
+ * Link one bundled plugin + its closure into the profile fallback and write
+ * its `--patch` overlay. Returns the overlay path and per-link status.
  */
-export function ensureVisionToolkit(ctx: RuntimeContext): VisionToolkitResult {
+function ensureBundledPlugin(ctx: RuntimeContext, spec: BundledPluginSpec): BundledPluginResult {
   const moduleDir = dshModuleDir(ctx)
   const fallback = join(dshHome(), 'profiles', 'node_modules')
+  const packageRoot = join(moduleDir, ...spec.packageName.split('/'))
+  const patchSource = join(packageRoot, 'cordis.patch.yml')
 
-  const linked = collectClosure(moduleDir, VISION_TOOLKIT_BUNDLE).map((name) => {
+  if (!existsSync(patchSource)) {
+    throw new Error(`bundled plugin ${spec.packageName} has no cordis.patch.yml at ${patchSource}`)
+  }
+
+  const linked = collectClosure(moduleDir, spec.packageName).map((name) => {
     const link = join(fallback, ...name.split('/'))
     const target = join(moduleDir, ...name.split('/'))
     return { name, status: ensureLink(link, target) }
   })
 
-  const overlayPath = visionToolkitOverlayPath()
-  writeFileSync(overlayPath, INSERT_PATCH, 'utf8')
-  return { overlayPath, linked }
+  const overlayPath = join(dshHome(), spec.overlayFilename)
+  writeFileSync(overlayPath, readFileSync(patchSource, 'utf8'), 'utf8')
+  return { id: spec.id, packageName: spec.packageName, overlayPath, linked }
+}
+
+/**
+ * Idempotently prepare every bundled plugin for the next `dsh web` spawn:
+ * junction the packages + their closures into the profile fallback and write
+ * one `--patch` overlay per plugin. Safe to run before every backend start.
+ */
+export function ensureBundledPlugins(ctx: RuntimeContext): BundledPluginResult[] {
+  return BUNDLED_PLUGINS.map((spec) => ensureBundledPlugin(ctx, spec))
+}
+
+/**
+ * Legacy single-plugin entry used by older callers. Kept so the vision-toolkit
+ * registration path stays available if a future build needs it in isolation.
+ */
+export function ensureVisionToolkit(ctx: RuntimeContext): { overlayPath: string; linked: PluginLink[] } {
+  const result = ensureBundledPlugin(ctx, BUNDLED_PLUGINS[0])
+  return { overlayPath: result.overlayPath, linked: result.linked }
 }

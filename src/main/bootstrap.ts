@@ -21,7 +21,7 @@ import { PetController } from './pet/pet-controller'
 import { bundledSkillsDir, dshBinPath, nodeRuntimePath, runtimeContext, type RuntimeContext } from './runtime'
 import { DeepSeekBalance } from './deepseek-balance'
 import { SessionManager } from './session-manager'
-import { ensureVisionToolkit } from './vision-toolkit'
+import { ensureBundledPlugins } from './vision-toolkit'
 import { SettingsStore } from './settings-store'
 import { TrayController } from './tray'
 import { UpdateService } from './update-service'
@@ -253,7 +253,7 @@ export class AppBootstrap {
       node: nodeRuntimePath(ctx),
       bin: dshBinPath(ctx),
       skillsDir: bundledSkillsDir(ctx),
-      patchFiles: this.prepareVisionToolkit(ctx),
+      patchFiles: this.prepareBundledPlugins(ctx),
       onLog: (line) => console.log(`[dsh] ${line}`),
       onStateChange: (state) => {
         if (state === 'ready') {
@@ -305,21 +305,23 @@ export class AppBootstrap {
   }
 
   /**
-   * Junction the bundled vision-toolkit bundle into the profile fallback and
-   * return the `--patch` overlay that registers it. A failure degrades to a
-   * backend without vision tools rather than blocking startup.
+   * Junction every bundled plugin into the profile fallback and return the
+   * `--patch` overlays that register them. A failure degrades to a backend
+   * without the extra bundled plugins rather than blocking startup.
    */
-  private prepareVisionToolkit(ctx: RuntimeContext): string[] {
+  private prepareBundledPlugins(ctx: RuntimeContext): string[] {
     try {
-      const result = ensureVisionToolkit(ctx)
-      for (const link of result.linked) {
-        if (link.status === 'created' || link.status === 'kept') continue
-        console.warn(`[${APP.name}] vision-toolkit link ${link.name}: ${link.status}`)
+      const results = ensureBundledPlugins(ctx)
+      for (const result of results) {
+        for (const link of result.linked) {
+          if (link.status === 'created' || link.status === 'kept') continue
+          console.warn(`[${APP.name}] bundled plugin ${result.packageName} link ${link.name}: ${link.status}`)
+        }
+        console.log(`[${APP.name}] bundled plugin overlay: ${result.overlayPath}`)
       }
-      console.log(`[${APP.name}] vision-toolkit overlay: ${result.overlayPath}`)
-      return [result.overlayPath]
+      return results.map((result) => result.overlayPath)
     } catch (error) {
-      console.error(`[${APP.name}] vision-toolkit registration failed:`, error)
+      console.error(`[${APP.name}] bundled plugin registration failed:`, error)
       return []
     }
   }

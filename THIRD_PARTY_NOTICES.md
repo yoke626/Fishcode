@@ -53,4 +53,9 @@ This project builds on the DeepSeek Harness ecosystem and on prior open work:
 
 - `@deepseek-ai/dsh`（DeepSeek Harness 后端）及其原生依赖：由 `dsh-bundle/package.json` 声明，`npm ci` 安装，各自的许可证随 `node_modules` 内相应包分发。
 - `@anionex/dsh-vision-toolkit`（视觉插件）：同上；FISHCODE 对其有三处 vendored 补丁（见 README「视觉服务」一节）。
+- `@omdsh-dev/dsh-genui`（GenUI 交互界面插件）：以 vendored tarball 形式位于 `vendor/plugins/omdsh-dev-dsh-genui-0.8.7.tgz`，MIT 许可证，Copyright © 2026 omdsh-dev（见 tarball 内 LICENSE）。
+- `dsh-better-sidebar`（右侧工作台插件）：npm 依赖，MIT 许可证。
+- `@linxin666/dsh-pet`（dsh-web-ui 鲸鱼娘宠物）：npm 依赖，Apache-2.0 许可证。
+- `@linxin666/dsh-client-ui-skin-center`（dsh-web-ui 皮肤中心）：npm 依赖，Apache-2.0 许可证。
+- `dshmarket`（插件市场）：npm 依赖，MIT 许可证。
 - 萌宠/图标素材：EmoteLab（署名要求见 [CHARACTER.md](./CHARACTER.md) 的「素材出处与署名」）。

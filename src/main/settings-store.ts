@@ -8,7 +8,7 @@
 
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from '../shared/settings'
+import { DEFAULT_SETTINGS, SETTINGS_VERSION, sanitizeSettings, type Settings } from '../shared/settings'
 import { STRINGS } from '../shared/strings'
 
 const SETTINGS_FILENAME = 'settings.json'
@@ -52,7 +52,15 @@ export class SettingsStore {
       return
     }
 
+    const rawVersion = isRecord(parsed) ? parsed.version : undefined
     this.current = sanitizeSettings(parsed)
+    if (rawVersion !== SETTINGS_VERSION) {
+      // v1 -> v2 migration: the bundled dsh-web-ui whale pet replaces the
+      // native desktop pet by default. The native pet remains available as an
+      // opt-in via the tray "显示 / 隐藏桌面萌宠".
+      this.current.petEnabled = false
+      this.scheduleWrite()
+    }
   }
 
   update(patch: Partial<Settings>): void {
@@ -109,4 +117,8 @@ export class SettingsStore {
       this.onRecover?.(`${STRINGS.settings.recovered}（${reason}）`)
     }
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
