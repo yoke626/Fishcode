@@ -1,2 +1,2 @@
 name: Router Standard (experimental)
-description: 任务感知的思维模式路由。首轮只暴露一句话 persona + shell/编辑器（RL 接口还原，首轮系统提示大幅缩短）；首次工具调用后再放开完整标准工具集。按任务分类注入推理引导，针对弱模型（Flash）的推理成本做了优化——首轮不铺开全部工具，避免模型在庞大的工具面与长系统提示上浪费推理与 token。
+description: Task-aware routing — RL-interface restoration: one-sentence persona + shell/editor surface; think-act feedback loops. Full Standard tools after the first tool call.

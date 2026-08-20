@@ -20,7 +20,7 @@
  */
 
 import {
-  applyPersona, bandFor, coreFor, parseMode, personaFor, sessionMode, testinessFor, clamp01,
+  applyPersona, bandFor, bandOf, coreFor, parseMode, personaFor, sessionMode, testinessFor, clamp01,
   isComplexTask,
 } from './router-core.mjs'
 
@@ -47,6 +47,23 @@ function toJsonSchema(spec) {
 export function apply(ctx, config) {
   const overrides = new Map() // session id -> explicit mode (number 0..1)
   const agents = new Map() // session id -> Agent (live handle, in-process only)
+  const firstUserText = new Map() // session id -> first REAL user message text (issue #3 fix)
+
+  // ── 路由模式（v0.2.0 命名，用户定义）───────────────────────────────────────
+  // standard（默认，新）: RL 接口还原——首轮只有 RL 训练句 + shell/str_replace_editor，
+  //   模型"想一段、做一段"（实测 25 步 / 24 工具调用 / 产出文件）。
+  // spec（旧）: 深度思考优先——分类 persona（w7/REACT/SPEC）+ 保留全部 sections，
+  //   模型首轮长思维链（101K 推理 0 行动是其特征，不是缺陷）。
+  const routerMode = config.routerMode === 'spec' ? 'spec' : 'standard'
+  const RL_PERSONA = 'You are a helpful software engineer assistant.'
+
+  /** spec 路由模式的首轮工具面（旧行为；weak 也走 default 面）。 */
+  function legacyCore(mode) {
+    switch (bandOf(mode)) {
+      case 'spec': return ['read', 'edit', 'glob', 'grep']
+      default: return ['read', 'write', 'edit']
+    }
+  }
 
   ctx.on('system-prompt/assemble', async (_assembly, context, next) => {
     const assembled = await next()
@@ -55,19 +72,39 @@ export function apply(ctx, config) {
     const session = agent.session
     agents.set(session.id, agent)
 
-    const mode = overrides.get(session.id) ?? sessionMode(session)
+    // issue #3 fix: the first assembly happens before the first user/message
+    // event lands in session.events, so sessionMode() saw an empty transcript
+    // and injected the WEAK band on the path-committing first request. Use the
+    // live text captured by the session/event listener (or inbox pending) so
+    // the first request carries the REAL classification.
+    const mode = overrides.get(session.id) ?? firstUserText.get(session.id) ?? sessionMode(session)
     const modelId = agent.options?.model
-    const persona = personaFor(mode, modelId)
 
-    // The persona stays constant for the whole session (mode is fixed); only
-    // the tool surface changes once, after the first durable tool/call.
-    const sections = applyPersona(assembled.sections, persona)
+    // ── 模式分派 ──
+    // standard（RL 接口还原）: 首轮 system = 只有 RL 训练句；身份/Web 定位/工具引导/
+    // 规则 sections 全部移除（minimal 的 complete:true 语义，实测 46 字符 system →
+    // 25 步迭代工作流）。
+    // spec（深度思考优先）: 分类 persona + 保留全部 sections（首轮超长思维链是特征）。
+    const planSection = (assembled.sections || []).find((s) => /plan/i.test(s.name))
+    let sections
+    let core
+    let persona
+    if (routerMode === 'standard') {
+      persona = RL_PERSONA
+      sections = planSection
+        ? [planSection, { name: 'router-persona', text: persona, order: 0 }]
+        : [{ name: 'router-persona', text: persona, order: 0 }]
+      core = new Set(['str_replace_editor']) // RL shape: shell + editor
+    } else {
+      persona = personaFor(mode, modelId)
+      sections = applyPersona(assembled.sections, persona) // keep all other sections
+      core = new Set(legacyCore(mode))
+    }
 
     if (session.events.some((event) => event.type === 'tool/call')) {
       return { ...assembled, sections, contexts: [] } // promoted: full catalog
     }
 
-    const core = new Set(coreFor(mode))
     const available = new Set(assembled.tools.map((tool) => tool.name))
     const shell = available.has('pwsh') ? 'pwsh' : available.has('bash') ? 'bash' : null
     if (shell === null) {
@@ -100,12 +137,15 @@ export function apply(ctx, config) {
     if (event.type !== 'user/message') return
     const data = event.data ?? {}
     if (data.source?.kind !== 'user') return // only real user messages
+    const text = extractText(data)
+    if (!firstUserText.has(session.id) && text.trim()) {
+      firstUserText.set(session.id, text.trim()) // issue #3: capture BEFORE assembly
+    }
     const agent = ctx.get('agent')
     const target = agent !== undefined && agent.session === session ? agent : [...agents.values()].find((a) => a.session === session)
     if (target === undefined || target.inbox === undefined) return
-    const mode = overrides.get(session.id) ?? sessionMode(session)
+    const mode = overrides.get(session.id) ?? firstUserText.get(session.id) ?? sessionMode(session)
     if (bandOf(mode) !== 'weak') return // strong modes need no guidance
-    const text = extractText(data)
     if (!text.trim()) return
     const guide = isComplexTask(text) ? GUIDE_DEEP : GUIDE_WEAK
     try {
@@ -150,6 +190,7 @@ export function apply(ctx, config) {
       const mode = overrides.get(session.id) ?? sessionMode(session)
       const modelId = currentAgent()?.options?.model
       return [
+        `router-mode=${routerMode} (standard=RL接口还原 / spec=深度思考优先)`,
         `mode=${fmtMode(mode)} (band=${bandFor(mode)})`,
         `persona=${personaFor(mode, modelId).replace(/\n/g, ' / ')}`,
         `core=[${coreFor(mode).join(', ')}]`,

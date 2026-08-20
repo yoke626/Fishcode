@@ -25,3 +25,6 @@ Thumbs.db
 *.log
 .cache/
 .electron-cache/
+
+# dsh file-upload runtime data
+.dsh-uploads/

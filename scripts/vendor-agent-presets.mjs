@@ -25,6 +25,9 @@
  *     Task-aware reasoning-mode routing: one-sentence persona + shell/editor
  *     first-turn surface, full Standard tools after the first durable tool
  *     call. Self-contained (no injector dependency). See THIRD_PARTY_NOTICES.md.
+ *   - router-spec      (dsh-router-standard, MIT, © 2026 yjh051108)
+ *     Deep-think-first routing: classified persona + full prompt sections,
+ *     full Standard tools after the first durable tool call.
  *
  * Usage: node scripts/vendor-agent-presets.mjs
  *

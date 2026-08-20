@@ -70,6 +70,11 @@ export const BUNDLED_PLUGINS: readonly BundledPluginSpec[] = [
     overlayFilename: VISION_TOOLKIT_OVERLAY_FILENAME,
   },
   {
+    id: 'dsh-super-injector',
+    packageName: '@dsh-external/dsh-super-injector',
+    overlayFilename: 'dsh-super-injector.patch.yml',
+  },
+  {
     id: 'genui',
     packageName: '@omdsh-dev/dsh-genui',
     overlayFilename: 'dsh-genui.patch.yml',

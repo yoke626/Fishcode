@@ -21,7 +21,7 @@ FISHCODE 是一个 Electron 桌面壳：它在本地启动 DeepSeek Harness 的 
 - **完成通知**：监听任务目录的忙→闲变化，任务完成后弹系统通知并让萌宠冒泡。
 - **右键打开**（Windows 安装版）：给文件右键菜单加上「用 FISHCODE 打开」。
 - **单实例锁**：重复启动自动聚焦已有窗口，`--open <路径>` 会把路径转发给运行中的实例。
-- **Router Standard 预设**：内置任务感知的思维模式路由预设（MIT 授权，见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)），新建会话时在预设选择器里选「Router Standard (experimental)」即可启用。
+- **Routing Suite**：内置 `dsh-super-injector` 运行时注入器（`dev_*` 工具全家桶），以及 **Router Standard (experimental)** / **Router Spec (experimental)** 思维模式路由预设；新建会话时在预设选择器里选择对应预设即可启用。
 - **自动更新**：启动后后台检查 GitHub 新版本，托盘菜单可手动检查；发现新版下载完成后重启即静默覆盖安装，数据不丢失。
 - **会话删除**：dsh 侧边栏里删不掉的废弃聊天框，直接在对应对话行的三点菜单（⋮）里点「删除会话」即可清理，无需离开主窗口。删除前二次确认；当前打开的会话与最近有写入（运行中）的会话自动保护不可删；删除后侧边栏自动刷新同步。会话 id 从页面行上直接读出，由独立的 Node 运行时在 `~/.dsh/sessions` 下定位并删除文件夹（快速目录扫描，不解压 zstd 日志），删除前后状态一目了然。
 - **内置 GenUI**：模型回答中可直接渲染可交互 UI（统计卡片、图表、表单、面板、测验等），无需额外安装。
@@ -144,13 +144,14 @@ FISHCODE 通过 `DSH_BUNDLED_SKILL_DIR` 指向安装目录下的 `resources/skil
 
 ## 内置预设
 
-FISHCODE 在 dsh 官方预设（标准 / 代码 / Cordis / 极简）之外，内置一个社区预设，通过 `scripts/vendor-agent-presets.mjs` 在 `dsh-bundle` 安装后拷贝进后端的内置预设目录：
+FISHCODE 在 dsh 官方预设（标准 / 代码 / Cordis / 极简）之外，内置两个社区预设，通过 `scripts/vendor-agent-presets.mjs` 在 `dsh-bundle` 安装后拷贝进后端的内置预设目录：
 
 | 预设 | 说明 |
 |---|---|
 | `router-standard`（Router Standard (experimental)） | 任务感知的思维模式路由：首轮只暴露一句话 persona + shell/编辑器（RL 接口还原），首次工具调用后再放开完整标准工具集。针对弱模型（Flash）带的第一轮工具调用与推理链实测优化。 |
+| `router-spec`（Router Spec (experimental)） | 深度思考优先路由：分类后注入完整 persona 与 prompt sections，长首轮推理链是特性而非缺陷；首次工具调用后再放开完整标准工具集。 |
 
-源码位于 `vendor/agent-presets/router-standard/`，来自 [dsh-router-standard](https://github.com/yjh051108/dsh-router-standard)（MIT，© 2026 yjh051108），授权与衍生来源声明见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)。新建会话时在预设选择器里选它即可启用；同仓库的运行时注入器与 mode-boost 插件均**未**内置。
+源码位于 `vendor/agent-presets/router-standard/` 与 `vendor/agent-presets/router-spec/`，来自 [dsh-router-standard](https://github.com/yjh051108/dsh-router-standard)（MIT，© 2026 yjh051108），授权与衍生来源声明见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)。新建会话时在预设选择器里选择对应预设即可启用。同时内置同仓库的 `dsh-super-injector` 运行时注入器（v0.3.3），提供 `dev_*` 工具全家桶。
 
 ## 素材替换点
 
@@ -162,6 +163,6 @@ FISHCODE 在 dsh 官方预设（标准 / 代码 / Cordis / 极简）之外，内
 
 ## 法律与致谢
 
-FISHCODE 是一份**原创重写**：架构上参考了 MIT 协议的开源项目 Bigfish 的经验，但代码、文案、素材均为原创，不是其分支或改名。仓库内提交的所有萌宠/图标素材必须为原创（见 [CHARACTER.md](./CHARACTER.md) 的「角色边界」），投递者需自行保证素材权利。**当前萌宠素材使用 EmoteLab 及其内置资源制作**（应其授权要求在公开场景署名，详见 [CHARACTER.md](./CHARACTER.md) 的「素材出处与署名」）。内置的 Router Standard 预设为第三方 MIT 代码，版权归原作者所有，署名与许可声明见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)。本项目以 MIT 协议发布，详见 [LICENSE](./LICENSE)。
+FISHCODE 是一份**原创重写**：架构上参考了 MIT 协议的开源项目 Bigfish 的经验，但代码、文案、素材均为原创，不是其分支或改名。仓库内提交的所有萌宠/图标素材必须为原创（见 [CHARACTER.md](./CHARACTER.md) 的「角色边界」），投递者需自行保证素材权利。**当前萌宠素材使用 EmoteLab 及其内置资源制作**（应其授权要求在公开场景署名，详见 [CHARACTER.md](./CHARACTER.md) 的「素材出处与署名」）。内置的 Router Standard / Router Spec 预设与 dsh-super-injector 为第三方代码，版权归原作者所有，署名与许可声明见 [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md)。本项目以 MIT 协议发布，详见 [LICENSE](./LICENSE)。
 
 再次强调：本项目与 DeepSeek 官方无关，DeepSeek 及相关商标归其权利人所有。

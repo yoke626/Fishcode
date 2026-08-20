@@ -15,6 +15,7 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const HOST = '127.0.0.1'
 const OVERLAYS = [
   'vision-toolkit.patch.yml',
+  'dsh-super-injector.patch.yml',
   'dsh-genui.patch.yml',
   'dsh-better-sidebar.patch.yml',
   'dsh-pet.patch.yml',

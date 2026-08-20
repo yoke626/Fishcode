@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### 新增
+
+- **内置 dsh-routing-suite**：集成 `dsh-super-injector` 运行时注入器（v0.3.3）与 Router Standard / Router Spec 思维模式路由预设。
+  - `dsh-super-injector` 提供 `dev_*` 工具全家桶（注入、热重载、卸载、插件状态、路由自愈等）。
+  - 预设选择器新增 **Router Standard (experimental)** 与 **Router Spec (experimental)**。
+
 ## [v0.1.5] - 2026-08-19
 
 ### 升级
