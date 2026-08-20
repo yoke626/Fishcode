@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [v0.1.6] - 2026-08-20
 
 ### 新增
 

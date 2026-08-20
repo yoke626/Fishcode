@@ -1,6 +1,6 @@
 {
   "name": "fishcode",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "FISHCODE — a desktop shell that wraps DeepSeek Harness's `dsh web` backend.",
   "main": "out/main/main/main.js",
   "license": "MIT",
